@@ -1,413 +1,414 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>삼성생명 보장 분석 및 상품 추천</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; }
-        .gradient-bg { background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%); }
-        .card { background: white; border-radius: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden; transition: all 0.3s ease; }
-        .recommend-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-        .progress-fill { transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        
-        .loading-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0.9); z-index: 100; backdrop-filter: blur(4px);
-            align-items: center; justify-content: center; flex-direction: column;
-        }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .animate-pulse-custom { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>삼성생명 보장 분석 및 상품 추천</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; }
+        .gradient-bg { background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%); }
+        .card { background: white; border-radius: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); overflow: hidden; transition: all 0.3s ease; }
+        .recommend-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .progress-fill { transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        .loading-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.9); z-index: 100; backdrop-filter: blur(4px);
+            align-items: center; justify-content: center; flex-direction: column;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .animate-pulse-custom { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
 
-        .hidden { display: none !important; }
-        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .strategy-step { position: relative; padding-left: 2rem; }
-        .strategy-step::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #e2e8f0; }
-        .strategy-step::after { content: ''; position: absolute; left: -4px; top: 0.5rem; width: 10px; height: 10px; border-radius: 50%; background: #2563eb; border: 2px solid white; }
-    </style>
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .strategy-step { position: relative; padding-left: 2rem; }
+        .strategy-step::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #e2e8f0; }
+        .strategy-step::after { content: ''; position: absolute; left: -4px; top: 0.5rem; width: 10px; height: 10px; border-radius: 50%; background: #2563eb; border: 2px solid white; }
+    </style>
 </head>
 <body class="p-4 md:p-8">
 
-    <div id="loading" class="loading-overlay">
-        <div class="text-blue-600 mb-4 text-6xl animate-pulse-custom"><i class="fas fa-shield-heart"></i></div>
-        <p id="loading-text" class="font-bold text-gray-700 text-xl">보장 데이터를 정밀 분석 중입니다...</p>
-    </div>
+    <div id="loading" class="loading-overlay">
+        <div class="text-blue-600 mb-4 text-6xl animate-pulse-custom"><i class="fas fa-shield-heart"></i></div>
+        <p id="loading-text" class="font-bold text-gray-700 text-xl">보장 데이터를 정밀 분석 중입니다...</p>
+    </div>
 
-    <!-- [메인 컨테이너] -->
-    <div id="main-container" class="max-w-5xl mx-auto space-y-8">
-        
-        <!-- 파일 업로드 섹션 -->
-        <section class="bg-white p-6 rounded-2xl border-2 border-dashed border-blue-200 text-center shadow-sm">
-            <h2 class="text-lg font-bold text-gray-800 mb-3 text-blue-600 italic">"내 보험, 얼마나 든든할까?"</h2>
-            <div class="flex flex-col items-center gap-3">
-                <input type="file" id="pdf-upload" class="hidden" accept=".pdf" onchange="processPDF(this.files[0])">
-                <button onclick="document.getElementById('pdf-upload').click()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition flex items-center gap-2 shadow-lg">
-                    <i class="fas fa-upload"></i> 보장분석 리포트(PDF) 업로드
-                </button>
-                <p class="text-[11px] text-gray-400 font-medium">삼성생명 43대 주요 보장 항목 및 Gemini 2.5 AI 정밀 분석</p>
-            </div>
-        </section>
+    <!-- [메인 컨테이너] -->
+    <div id="main-container" class="max-w-5xl mx-auto space-y-8">
+        
+        <!-- 파일 업로드 섹션 -->
+        <section class="bg-white p-6 rounded-2xl border-2 border-dashed border-blue-200 text-center shadow-sm">
+            <h2 class="text-lg font-bold text-gray-800 mb-3 text-blue-600 italic">"내 보험, 얼마나 든든할까?"</h2>
+            <div class="flex flex-col items-center gap-3">
+                <input type="file" id="pdf-upload" class="hidden" accept=".pdf" onchange="processPDF(this.files[0])">
+                <button onclick="document.getElementById('pdf-upload').click()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition flex items-center gap-2 shadow-lg">
+                    <i class="fas fa-upload"></i> 보장분석 리포트(PDF) 업로드
+                </button>
+                <p class="text-[11px] text-gray-400 font-medium">삼성생명 43대 주요 보장 항목 및 Gemini 2.5 AI 정밀 분석</p>
+            </div>
+        </section>
 
-        <div id="report-view" class="space-y-8">
-            <!-- 헤더 섹션 -->
-            <header class="gradient-bg text-white p-8 rounded-2xl shadow-xl relative overflow-hidden">
-                <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div class="text-center md:text-left">
-                        <h1 class="text-3xl font-bold mb-1 tracking-tight">Personal Insurance Audit</h1>
-                        <p class="opacity-80 text-sm font-light uppercase tracking-widest">삼성생명 지능형 보장 분석 결과</p>
-                        <div class="mt-4 flex items-center gap-2 justify-center md:justify-start">
-                            <span class="px-4 py-1 bg-white text-blue-900 rounded-full font-bold text-sm">
-                                <span id="target-name">분석 대기 중</span>
-                                <span id="target-age" class="ml-1 text-blue-600"></span>
-                            </span>
-                            <span class="text-xs opacity-70">컨설턴트: 최세림 GFC</span>
-                        </div>
-                    </div>
-                    <div class="bg-white bg-opacity-10 p-4 rounded-xl backdrop-blur-md border border-white border-opacity-20 text-center">
-                        <p class="text-[10px] uppercase opacity-60 mb-1">Total Monthly Premium</p>
-                        <p id="total-premium" class="text-2xl font-black">0원</p>
-                    </div>
-                </div>
-            </header>
+        <div id="report-view" class="space-y-8">
+            <!-- 헤더 섹션 -->
+            <header class="gradient-bg text-white p-8 rounded-2xl shadow-xl relative overflow-hidden">
+                <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div class="text-center md:text-left">
+                        <h1 class="text-3xl font-bold mb-1 tracking-tight">Personal Insurance Audit</h1>
+                        <p class="opacity-80 text-sm font-light uppercase tracking-widest">삼성생명 지능형 보장 분석 결과</p>
+                        <div class="mt-4 flex items-center gap-2 justify-center md:justify-start">
+                            <span class="px-4 py-1 bg-white text-blue-900 rounded-full font-bold text-sm">
+                                <span id="target-name">분석 대기 중</span>
+                                <span id="target-age" class="ml-1 text-blue-600"></span>
+                            </span>
+                            <span class="text-xs opacity-70">컨설턴트: 최세림 GFC</span>
+                        </div>
+                    </div>
+                    <div class="bg-white bg-opacity-10 p-4 rounded-xl backdrop-blur-md border border-white border-opacity-20 text-center">
+                        <p class="text-[10px] uppercase opacity-60 mb-1">Total Monthly Premium</p>
+                        <p id="total-premium" class="text-2xl font-black">0원</p>
+                    </div>
+                </div>
+            </header>
 
-            <!-- 대시보드 요약 -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="card p-6 flex flex-col items-center justify-center">
-                    <p class="text-gray-400 text-[10px] font-bold uppercase mb-2">보장 건전성 지수</p>
-                    <div id="score-text" class="text-5xl font-black text-blue-600">0%</div>
-                    <div class="w-full h-1.5 bg-gray-100 rounded-full mt-4">
-                        <div id="score-bar" class="h-full bg-blue-600 rounded-full transition-all duration-1000" style="width: 0%"></div>
-                    </div>
-                </div>
+            <!-- 대시보드 요약 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="card p-6 flex flex-col items-center justify-center">
+                    <p class="text-gray-400 text-[10px] font-bold uppercase mb-2">보장 건전성 지수</p>
+                    <div id="score-text" class="text-5xl font-black text-blue-600">0%</div>
+                    <div class="w-full h-1.5 bg-gray-100 rounded-full mt-4">
+                        <div id="score-bar" class="h-full bg-blue-600 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                    </div>
+                </div>
 
-                <div class="card p-6 flex flex-col items-center justify-center">
-                    <p class="text-gray-400 text-[10px] font-bold uppercase mb-2">항목별 가입 현황</p>
-                    <div class="flex gap-4 items-end py-1">
-                        <div class="text-center">
-                            <span id="count-good" class="text-2xl font-bold text-emerald-500">0</span>
-                            <p class="text-[9px] text-gray-400 font-bold">우수/보통</p>
-                        </div>
-                        <div class="text-center border-x px-4">
-                            <span id="count-insufficient" class="text-2xl font-bold text-orange-400">0</span>
-                            <p class="text-[9px] text-gray-400 font-bold">부족</p>
-                        </div>
-                        <div class="text-center">
-                            <span id="count-missing" class="text-2xl font-bold text-rose-500">0</span>
-                            <p class="text-[9px] text-gray-400 font-bold">미가입</p>
-                        </div>
-                    </div>
-                    <p class="mt-3 text-[9px] text-gray-300">총 43개 핵심 보장 항목 기준</p>
-                </div>
+                <div class="card p-6 flex flex-col items-center justify-center">
+                    <p class="text-gray-400 text-[10px] font-bold uppercase mb-2">항목별 가입 현황</p>
+                    <div class="flex gap-4 items-end py-1">
+                        <div class="text-center">
+                            <span id="count-good" class="text-2xl font-bold text-emerald-500">0</span>
+                            <p class="text-[9px] text-gray-400 font-bold">우수/보통</p>
+                        </div>
+                        <div class="text-center border-x px-4">
+                            <span id="count-insufficient" class="text-2xl font-bold text-orange-400">0</span>
+                            <p class="text-[9px] text-gray-400 font-bold">부족</p>
+                        </div>
+                        <div class="text-center">
+                            <span id="count-missing" class="text-2xl font-bold text-rose-500">0</span>
+                            <p class="text-[9px] text-gray-400 font-bold">미가입</p>
+                        </div>
+                    </div>
+                    <p class="mt-3 text-[9px] text-gray-300">총 43개 핵심 보장 항목 기준</p>
+                </div>
 
-                <div class="card p-6 bg-blue-50 border border-blue-100 flex flex-col justify-center">
-                    <p class="text-blue-800 text-[10px] font-bold uppercase mb-2 text-center">AI 분석 총평</p>
-                    <p id="ai-summary" class="text-xs text-gray-600 text-center leading-relaxed">
-                        증권을 업로드하시면 AI가 <br>보장 공백을 분석하여 상품을 제안합니다.
-                    </p>
-                </div>
-            </div>
+                <div class="card p-6 bg-blue-50 border border-blue-100 flex flex-col justify-center">
+                    <p class="text-blue-800 text-[10px] font-bold uppercase mb-2 text-center">AI 분석 총평</p>
+                    <p id="ai-summary" class="text-xs text-gray-600 text-center leading-relaxed">
+                        증권을 업로드하시면 AI가 <br>보장 공백을 분석하여 상품을 제안합니다.
+                    </p>
+                </div>
+            </div>
 
-            <!-- 상세 진단표 -->
-            <section class="card shadow-sm border border-gray-100">
-                <div class="px-8 py-5 bg-gray-50 border-b flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-1 h-5 bg-blue-600 rounded-full"></div>
-                        <h3 class="font-black text-gray-800 text-base">43대 주요 보장 담보별 정밀 분석</h3>
-                    </div>
-                    <div class="flex gap-4 text-[10px] font-black">
-                        <span class="flex items-center gap-1 text-emerald-600"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 우수</span>
-                        <span class="flex items-center gap-1 text-orange-500"><span class="w-2 h-2 rounded-full bg-orange-500"></span> 부족</span>
-                        <span class="flex items-center gap-1 text-rose-600"><span class="w-2 h-2 rounded-full bg-rose-500"></span> 미가입</span>
-                    </div>
-                </div>
-                <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
-                    <table class="w-full text-left">
-                        <thead class="sticky top-0 bg-white border-b z-10">
-                            <tr class="text-gray-400 text-[11px] font-black uppercase tracking-tighter">
-                                <th class="px-8 py-4">보장 담보 명칭</th>
-                                <th class="px-4 py-4">현재 가입금액</th>
-                                <th class="px-4 py-4 text-center">진단 그래프</th>
-                                <th class="px-8 py-4 text-right">상태</th>
-                            </tr>
-                        </thead>
-                        <tbody id="diagnosis-rows" class="divide-y divide-gray-50">
-                            <tr><td colspan="4" class="py-32 text-center text-gray-300 font-bold">리포트를 업로드하시면 상세 분석 데이터가 표시됩니다.</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+            <!-- 상세 진단표 -->
+            <section class="card shadow-sm border border-gray-100">
+                <div class="px-8 py-5 bg-gray-50 border-b flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-1 h-5 bg-blue-600 rounded-full"></div>
+                        <h3 class="font-black text-gray-800 text-base">43대 주요 보장 담보별 정밀 분석</h3>
+                    </div>
+                    <div class="flex gap-4 text-[10px] font-black">
+                        <span class="flex items-center gap-1 text-emerald-600"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> 우수</span>
+                        <span class="flex items-center gap-1 text-orange-500"><span class="w-2 h-2 rounded-full bg-orange-500"></span> 부족</span>
+                        <span class="flex items-center gap-1 text-rose-600"><span class="w-2 h-2 rounded-full bg-rose-500"></span> 미가입</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+                    <table class="w-full text-left">
+                        <thead class="sticky top-0 bg-white border-b z-10">
+                            <tr class="text-gray-400 text-[11px] font-black uppercase tracking-tighter">
+                                <th class="px-8 py-4">보장 담보 명칭</th>
+                                <th class="px-4 py-4">현재 가입금액</th>
+                                <th class="px-4 py-4 text-center">진단 그래프</th>
+                                <th class="px-8 py-4 text-right">상태</th>
+                            </tr>
+                        </thead>
+                        <tbody id="diagnosis-rows" class="divide-y divide-gray-50">
+                            <tr><td colspan="4" class="py-32 text-center text-gray-300 font-bold">리포트를 업로드하시면 상세 분석 데이터가 표시됩니다.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
 
-            <!-- 추천 상품 섹션 -->
-            <section id="total-area" class="space-y-6 hidden">
-                <div class="flex items-center gap-3">
-                    <div class="h-6 w-1.5 bg-blue-600 rounded-full"></div>
-                    <h2 class="text-xl font-black text-gray-800">삼성생명 상품 라인업</h2>
-                </div>
-                <div id="recommend-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
-            </section>
+            <!-- 추천 상품 섹션 -->
+            <section id="total-area" class="space-y-6 hidden">
+                <div class="flex items-center gap-3">
+                    <div class="h-6 w-1.5 bg-blue-600 rounded-full"></div>
+                    <h2 class="text-xl font-black text-gray-800">삼성생명 상품 라인업</h2>
+                </div>
+                <div id="recommend-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+            </section>
 
-            <!-- 전문가 제안 섹션 -->
-            <section id="expert-strategy-section" class="hidden space-y-6">
-                <div class="flex items-center gap-3">
-                    <div class="h-6 w-1.5 bg-blue-900 rounded-full"></div>
-                    <h2 class="text-xl font-black text-gray-800">전문가 제안 가입 전략 및 상품 안내</h2>
-                </div>
-                <div class="card p-8 border-l-8 border-blue-900">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="space-y-6">
-                            <h3 class="text-lg font-bold text-blue-900 flex items-center gap-2">
-                                <i class="fas fa-lightbulb"></i> 맞춤형 보강 로드맵
-                            </h3>
-                            <div id="dynamic-strategy" class="space-y-4">
-                                <!-- AI가 생성한 전략이 들어가는 곳 -->
-                            </div>
-                        </div>
-                        <div class="bg-slate-50 p-6 rounded-xl border border-slate-100 flex flex-col justify-between">
-                            <div>
-                                <h4 class="text-sm font-black text-gray-700 mb-4 uppercase tracking-tighter">컨설턴트 핵심 체크포인트</h4>
-                                <ul class="space-y-3">
-                                    <li class="flex items-start gap-2 text-xs text-gray-600">
-                                        <i class="fas fa-check-circle text-blue-600 mt-0.5"></i>
-                                        <span>기존 보험 해지보다는 <b>부족분 보강</b>을 우선하여 가성비 극대화</span>
-                                    </li>
-                                    <li class="flex items-start gap-2 text-xs text-gray-600">
-                                        <i class="fas fa-check-circle text-blue-600 mt-0.5"></i>
-                                        <span>가족력을 고려한 <b>유사암/전이암</b> 범위 확대 제안</span>
-                                    </li>
-                                    <li class="flex items-start gap-2 text-xs text-gray-600">
-                                        <i class="fas fa-check-circle text-blue-600 mt-0.5"></i>
-                                        <span>유병력자의 경우 <b>계약전환제도</b>를 활용한 향후 보험료 인하 전략</span>
-                                    </li>
-                                </ul>
-                            </div>
-                            <div class="mt-6 pt-4 border-t border-slate-200">
-                                <p class="text-[10px] text-gray-400 font-medium">※ 본 안내는 고객님의 보장 분석 결과를 바탕으로 전문가가 주관적으로 작성한 가이드라인이며, 실제 가입 시 상품 설명서를 반드시 확인하시기 바랍니다.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </div>
-    </div>
+            <!-- 전문가 제안 섹션 -->
+            <section id="expert-strategy-section" class="hidden space-y-6">
+                <div class="flex items-center gap-3">
+                    <div class="h-6 w-1.5 bg-blue-900 rounded-full"></div>
+                    <h2 class="text-xl font-black text-gray-800">전문가 제안 가입 전략 및 상품 안내</h2>
+                </div>
+                <div class="card p-8 border-l-8 border-blue-900">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-6">
+                            <h3 class="text-lg font-bold text-blue-900 flex items-center gap-2">
+                                <i class="fas fa-lightbulb"></i> 맞춤형 보강 로드맵
+                            </h3>
+                            <div id="dynamic-strategy" class="space-y-4">
+                                <!-- AI가 생성한 전략이 들어가는 곳 -->
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-xl border border-slate-100 flex flex-col justify-between">
+                            <div>
+                                <h4 class="text-sm font-black text-gray-700 mb-4 uppercase tracking-tighter">컨설턴트 핵심 체크포인트</h4>
+                                <ul class="space-y-3">
+                                    <li class="flex items-start gap-2 text-xs text-gray-600">
+                                        <i class="fas fa-check-circle text-blue-600 mt-0.5"></i>
+                                        <span>기존 보험 해지보다는 <b>부족분 보강</b>을 우선하여 가성비 극대화</span>
+                                    </li>
+                                    <li class="flex items-start gap-2 text-xs text-gray-600">
+                                        <i class="fas fa-check-circle text-blue-600 mt-0.5"></i>
+                                        <span>가족력을 고려한 <b>유사암/전이암</b> 범위 확대 제안</span>
+                                    </li>
+                                    <li class="flex items-start gap-2 text-xs text-gray-600">
+                                        <i class="fas fa-check-circle text-blue-600 mt-0.5"></i>
+                                        <span>유병력자의 경우 <b>계약전환제도</b>를 활용한 향후 보험료 인하 전략</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="mt-6 pt-4 border-t border-slate-200">
+                                <p class="text-[10px] text-gray-400 font-medium">※ 본 안내는 고객님의 보장 분석 결과를 바탕으로 전문가가 주관적으로 작성한 가이드라인이며, 실제 가입 시 상품 설명서를 반드시 확인하시기 바랍니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
 
-    <!-- [상세 정보 컨테이너] -->
-    <div id="detail-view" class="max-w-3xl mx-auto hidden fade-in py-4"></div>
+    <!-- [상세 정보 컨테이너] -->
+    <div id="detail-view" class="max-w-3xl mx-auto hidden fade-in py-4"></div>
 
-    <script>
-        const apiKey = ""; // 환경 제공 키 사용
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    <script>
+        const apiKey = ""; // 환경 제공 키 사용
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-        const productPortfolio = [
-            { id: 'damoeun-s5', type: '표준체 통합형', name: '다(多)모은 건강보험 S5', target: ['cancer', 'brain', 'heart', 'surgery'], reason: '당사 최다 특약 보유한 대표 건강상품으로, 업계 최초 중입자치료 및 프리미엄 암치료비 등 최신 의료기술 보장에 특화되어 있습니다.', features: ['표준체', '중입자치료', '올인원케어'], detail: { merit: '소구력 높은 비급여 항암약물/로봇수술 및 상급종합병원 치료비 집중 강화', coverage: [{ label: '보장/납입', val: '90세·종신 / 10·15·20·30년납' }, { label: '주요특약', val: '항암중입자방사선, 프리미엄암특정치료' }] } },
-            { id: 'ganpyeon-damoeun', type: '유병자 통합형', name: 'The간편한 다(多)모은 건강보험', target: ['cancer', 'brain', 'heart', 'surgery'], reason: '초경증(3.10.5)부터 중증(3.1.5)까지 유병자 고객을 세분화하여 표준체 수준의 폭넓은 보장을 제공합니다.', features: ['간편고지', '계약전환제도', '무해약환급금형'], detail: { merit: '무사고 시 보험료 인하가 가능한 계약전환제도 및 다양한 유병자 라인업 완성', coverage: [{ label: '고지유형', val: '1형(3.10.5) ~ 4형(3.1.5) 세분화' }, { label: '보장/납입', val: '90세·종신 / 10·15·20·30년납' }] } },
-            { id: 'the-light-ganpyeon-2506', type: '유병자 실속형', name: 'The라이트 간편건강보험 (2506)', target: ['cancer', 'brain', 'heart'], reason: '25.06 신상품으로, 상품 구조 단순화 및 핵심 전략 담보(암/뇌/심)의 가격 경쟁력을 극대화한 가성비 유병자 상품입니다.', features: ['25.06 신상', '가격경쟁력', '갱신형'], detail: { merit: '기존 유병자 보험 대비 낮은 보험료로 핵심 3대 질병 보장 집중 타겟팅', coverage: [{ label: '상품구조', val: '20/30년 갱신형 (최대 100세)' }, { label: '고지항목', val: '1형(3.10.5), 2형(3.5.5)' }] } },
-            { id: 'the-light-health', type: '건강우량체형', name: 'The라이트 건강보험 (건강고지형)', target: ['cancer', 'brain', 'heart'], reason: '표준체보다 더 건강한 우량고객을 위한 상품으로, 10년 고지 시 일반 표준체 대비 최대 25% 저렴한 보험료가 장점입니다.', features: ['건강고지형', '최대 25% 할인', '우량체 특화'], detail: { merit: '입원/수술 고지 추가를 통해 건강한 고객에게 확실한 보험료 혜택 제공', coverage: [{ label: '고지유형', val: '1형(10년고지), 2형(7년고지)' }, { label: '보장/납입', val: '100세 만기 / 10·15·20·30년납' }] } },
-            { id: 'double-bojang-cancer', type: '보장+저축 하이브리드', name: '더블보장보험 (암/암간병)', target: ['cancer', 'care'], reason: '암이나 간병 발생 시 기납입보험료의 최대 200%를 지급하며, 생존 보장과 연금/사망 기능을 결합한 하이브리드 상품입니다.', features: ['200% 환급', '암간병 특화', '건강관리서비스'], detail: { merit: '암/간병 발생 시 연금액 2배 설계로 노후 자산 니즈 동시 충족', coverage: [{ label: '주요특징', val: '암/간병 시그니처 발생 시 기납입 2배' }, { label: '추가보장', val: '발생 후 사망보험금 가입금액 2배' }] } },
-            { id: 'plus-one-health', type: '환급형 건강보험', name: '플러스원 건강보험', target: ['cancer', 'death', 'senior'], reason: '업계 최초 자유설계식 환급형 상품으로, 납입 완료 시 해약환급금 100% 수준을 유지하며 시니어 보장을 더해줍니다.', features: ['100% 환급', '시니어보장플랜', '전이암 보장'], detail: { merit: '노년기에 필요한 사망/시니어 보장이 장기 유지 시 자동으로 추가되는 구조', coverage: [{ label: '환급구조', val: '납입완료 시 100% 수준 환급금 형성' }, { label: '특화담보', val: '전이암/고액암 직접치료 특약 탑재' }] } },
-            { id: 'well-aging-health', type: '실버 케어형', name: '웰에이징(Well-Aging) 건강보험', target: ['care', 'dementia', 'senior'], reason: '노인성 질환 예방부터 치매, 재가/시설 급여까지 노후 돌봄을 완벽하게 커버하는 시니어 전용 보험입니다.', features: ['시니어 전용', '돌봄플랜', '건강관리지원금'], detail: { merit: '치매 보장과 돌봄 서비스(재가/시설급여)에 집중한 시니어 특화 라인업', coverage: [{ label: '특화특약', val: '웰에이징 질병보장, 건강관리지원금 전환' }, { label: '케어서비스', val: '웰에이징 케어서비스 제공' }] } },
-            { id: 'the-dream-health', type: '환급 특화형', name: 'The(더) Dream 건강보험', target: ['cancer', 'brain', 'heart', 'refund'], reason: '보장, 환급, 연금을 하나로 합친 어른이 전용 보험으로, 만기 시 100% 환급과 완납기념금을 제공합니다.', features: ['100% 환급', '완납기념금', '심플한 구조'], detail: { merit: '주보험 하나로 33가지 주요 보장 해결 및 최대 110% 강화된 환급 구조', coverage: [{ label: '환급률', val: '만기 시 100% + 완납기념금(5~10%)' }, { label: '가입대상', val: '표준체 및 간편고지(3.5.5) 선택 가능' }] } }
-        ];
+        const productPortfolio = [
+            { id: 'damoeun-s5', type: '표준체 통합형', name: '다(多)모은 건강보험 S5', target: ['cancer', 'brain', 'heart', 'surgery'], reason: '당사 최다 특약 보유한 대표 건강상품으로, 업계 최초 중입자치료 및 프리미엄 암치료비 등 최신 의료기술 보장에 특화되어 있습니다.', features: ['표준체', '중입자치료', '올인원케어'], detail: { merit: '소구력 높은 비급여 항암약물/로봇수술 및 상급종합병원 치료비 집중 강화', coverage: [{ label: '보장/납입', val: '90세·종신 / 10·15·20·30년납' }, { label: '주요특약', val: '항암중입자방사선, 프리미엄암특정치료' }] } },
+            { id: 'ganpyeon-damoeun', type: '유병자 통합형', name: 'The간편한 다(多)모은 건강보험', target: ['cancer', 'brain', 'heart', 'surgery'], reason: '초경증(3.10.5)부터 중증(3.1.5)까지 유병자 고객을 세분화하여 표준체 수준의 폭넓은 보장을 제공합니다.', features: ['간편고지', '계약전환제도', '무해약환급금형'], detail: { merit: '무사고 시 보험료 인하가 가능한 계약전환제도 및 다양한 유병자 라인업 완성', coverage: [{ label: '고지유형', val: '1형(3.10.5) ~ 4형(3.1.5) 세분화' }, { label: '보장/납입', val: '90세·종신 / 10·15·20·30년납' }] } },
+            { id: 'the-light-ganpyeon-2506', type: '유병자 실속형', name: 'The라이트 간편건강보험 (2506)', target: ['cancer', 'brain', 'heart'], reason: '25.06 신상품으로, 상품 구조 단순화 및 핵심 전략 담보(암/뇌/심)의 가격 경쟁력을 극대화한 가성비 유병자 상품입니다.', features: ['25.06 신상', '가격경쟁력', '갱신형'], detail: { merit: '기존 유병자 보험 대비 낮은 보험료로 핵심 3대 질병 보장 집중 타겟팅', coverage: [{ label: '상품구조', val: '20/30년 갱신형 (최대 100세)' }, { label: '고지항목', val: '1형(3.10.5), 2형(3.5.5)' }] } },
+            { id: 'the-light-health', type: '건강우량체형', name: 'The라이트 건강보험 (건강고지형)', target: ['cancer', 'brain', 'heart'], reason: '표준체보다 더 건강한 우량고객을 위한 상품으로, 10년 고지 시 일반 표준체 대비 최대 25% 저렴한 보험료가 장점입니다.', features: ['건강고지형', '최대 25% 할인', '우량체 특화'], detail: { merit: '입원/수술 고지 추가를 통해 건강한 고객에게 확실한 보험료 혜택 제공', coverage: [{ label: '고지유형', val: '1형(10년고지), 2형(7년고지)' }, { label: '보장/납입', val: '100세 만기 / 10·15·20·30년납' }] } },
+            { id: 'double-bojang-cancer', type: '보장+저축 하이브리드', name: '더블보장보험 (암/암간병)', target: ['cancer', 'care'], reason: '암이나 간병 발생 시 기납입보험료의 최대 200%를 지급하며, 생존 보장과 연금/사망 기능을 결합한 하이브리드 상품입니다.', features: ['200% 환급', '암간병 특화', '건강관리서비스'], detail: { merit: '암/간병 발생 시 연금액 2배 설계로 노후 자산 니즈 동시 충족', coverage: [{ label: '주요특징', val: '암/간병 시그니처 발생 시 기납입 2배' }, { label: '추가보장', val: '발생 후 사망보험금 가입금액 2배' }] } },
+            { id: 'plus-one-health', type: '환급형 건강보험', name: '플러스원 건강보험', target: ['cancer', 'death', 'senior'], reason: '업계 최초 자유설계식 환급형 상품으로, 납입 완료 시 해약환급금 100% 수준을 유지하며 시니어 보장을 더해줍니다.', features: ['100% 환급', '시니어보장플랜', '전이암 보장'], detail: { merit: '노년기에 필요한 사망/시니어 보장이 장기 유지 시 자동으로 추가되는 구조', coverage: [{ label: '환급구조', val: '납입완료 시 100% 수준 환급금 형성' }, { label: '특화담보', val: '전이암/고액암 직접치료 특약 탑재' }] } },
+            { id: 'well-aging-health', type: '실버 케어형', name: '웰에이징(Well-Aging) 건강보험', target: ['care', 'dementia', 'senior'], reason: '노인성 질환 예방부터 치매, 재가/시설 급여까지 노후 돌봄을 완벽하게 커버하는 시니어 전용 보험입니다.', features: ['시니어 전용', '돌봄플랜', '건강관리지원금'], detail: { merit: '치매 보장과 돌봄 서비스(재가/시설급여)에 집중한 시니어 특화 라인업', coverage: [{ label: '특화특약', val: '웰에이징 질병보장, 건강관리지원금 전환' }, { label: '케어서비스', val: '웰에이징 케어서비스 제공' }] } },
+            { id: 'the-dream-health', type: '환급 특화형', name: 'The(더) Dream 건강보험', target: ['cancer', 'brain', 'heart', 'refund'], reason: '보장, 환급, 연금을 하나로 합친 어른이 전용 보험으로, 만기 시 100% 환급과 완납기념금을 제공합니다.', features: ['100% 환급', '완납기념금', '심플한 구조'], detail: { merit: '주보험 하나로 33가지 주요 보장 해결 및 최대 110% 강화된 환급 구조', coverage: [{ label: '환급률', val: '만기 시 100% + 완납기념금(5~10%)' }, { label: '가입대상', val: '표준체 및 간편고지(3.5.5) 선택 가능' }] } }
+        ];
 
-        async function analyzeWithGemini(text) {
-            const systemPrompt = `당신은 삼성생명 전문 보장분석 AI입니다. 제공된 텍스트 리포트에서 다음 정보를 정확하게 추출하여 JSON으로 응답하세요.
-            응답 스키마:
-            {
-              "userName": "문서 내 고객 이름",
-              "userAge": "숫자만",
-              "totalPremium": "월 보험료 합계, 숫자만",
-              "safetyScore": "보장지수 %, 숫자만",
-              "counts": { "good": "우수/보통 개수", "insuff": "부족 개수", "miss": "미가입 개수" },
-              "coverageList": [ { "name": "43대 담보명", "currentVal": "가입금액 숫자", "status": "우수|보통|부족|미가입" } ],
-              "aiSummary": "보장 공백에 대한 2문장 이내의 총평",
-              "strategies": [ { "step": "1", "title": "전략 제목", "desc": "상세 설명" } ]
-            }
-            43대 담보 리스트를 최대한 찾아내고 리포트의 수치를 존중하세요.`;
+        async function analyzeWithGemini(text) {
+            const systemPrompt = `당신은 삼성생명 전문 보장분석 AI입니다. 제공된 텍스트 리포트에서 다음 정보를 정확하게 추출하여 JSON으로 응답하세요.
+            응답 스키마:
+            {
+              "userName": "문서 내 고객 이름",
+              "userAge": "숫자만",
+              "totalPremium": "월 보험료 합계, 숫자만",
+              "safetyScore": "보장지수 %, 숫자만",
+              "counts": { "good": "우수/보통 개수", "insuff": "부족 개수", "miss": "미가입 개수" },
+              "coverageList": [ { "name": "43대 담보명", "currentVal": "가입금액 숫자", "status": "우수|보통|부족|미가입" } ],
+              "aiSummary": "보장 공백에 대한 2문장 이내의 총평",
+              "strategies": [ { "step": "1", "title": "전략 제목", "desc": "상세 설명" } ]
+            }
+            43대 담보 리스트를 최대한 찾아내고 리포트의 수치를 존중하세요.`;
 
-            const payload = {
-                contents: [{ parts: [{ text: text }] }],
-                systemInstruction: { parts: [{ text: systemPrompt }] },
-                generationConfig: { responseMimeType: "application/json" }
-            };
+            const payload = {
+                contents: [{ parts: [{ text: text }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: { responseMimeType: "application/json" }
+            };
 
-            for (let i = 0; i < 5; i++) {
-                try {
-                    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    const result = await resp.json();
-                    return JSON.parse(result.candidates[0].content.parts[0].text);
-                } catch (e) {
-                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
-                }
-            }
-            throw new Error("Gemini 분석 실패");
-        }
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await resp.json();
+                    return JSON.parse(result.candidates[0].content.parts[0].text);
+                } catch (e) {
+                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+                }
+            }
+            throw new Error("Gemini 분석 실패");
+        }
 
-        async function processPDF(file) {
-            if (!file) return;
-            const loadingOverlay = document.getElementById('loading');
-            const loadingText = document.getElementById('loading-text');
-            loadingOverlay.style.display = 'flex';
-            loadingText.innerText = "PDF 텍스트를 읽고 있습니다...";
+        async function processPDF(file) {
+            if (!file) return;
+            const loadingOverlay = document.getElementById('loading');
+            const loadingText = document.getElementById('loading-text');
+            loadingOverlay.style.display = 'flex';
+            loadingText.innerText = "PDF 텍스트를 읽고 있습니다...";
 
-            try {
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                let rawText = "";
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const content = await page.getTextContent();
-                    rawText += content.items.map(it => it.str).join(" ") + "\n";
-                }
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let rawText = "";
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    rawText += content.items.map(it => it.str).join(" ") + "\n";
+                }
 
-                loadingText.innerText = "Gemini 2.5 AI가 보장 데이터를 정밀 분석 중입니다...";
-                const data = await analyzeWithGemini(rawText);
-                renderResult(data);
-            } catch (err) {
-                console.error(err);
-                alert("분석 중 오류가 발생했습니다. 다시 시도해주세요.");
-            } finally {
-                loadingOverlay.style.display = 'none';
-            }
-        }
+                loadingText.innerText = "Gemini 2.5 AI가 보장 데이터를 정밀 분석 중입니다...";
+                const data = await analyzeWithGemini(rawText);
+                renderResult(data);
+            } catch (err) {
+                console.error(err);
+                alert("분석 중 오류가 발생했습니다. 다시 시도해주세요.");
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
 
-        function renderResult(data) {
-            // 헤더 정보
-            document.getElementById('target-name').innerText = data.userName || "고객님";
-            document.getElementById('target-age').innerText = `(${data.userAge || '??'}세)`;
-            document.getElementById('total-premium').innerText = (parseInt(data.totalPremium) || 0).toLocaleString() + "원";
-            
-            // 대시보드
-            document.getElementById('score-text').innerText = (data.safetyScore || 0) + "%";
-            document.getElementById('score-bar').style.width = (data.safetyScore || 0) + "%";
-            document.getElementById('count-good').innerText = data.counts.good || 0;
-            document.getElementById('count-insufficient').innerText = data.counts.insuff || 0;
-            document.getElementById('count-missing').innerText = data.counts.miss || 0;
-            document.getElementById('ai-summary').innerHTML = data.aiSummary;
+        function renderResult(data) {
+            // 헤더 정보
+            document.getElementById('target-name').innerText = data.userName || "고객님";
+            document.getElementById('target-age').innerText = `(${data.userAge || '??'}세)`;
+            document.getElementById('total-premium').innerText = (parseInt(data.totalPremium) || 0).toLocaleString() + "원";
+            
+            // 대시보드
+            document.getElementById('score-text').innerText = (data.safetyScore || 0) + "%";
+            document.getElementById('score-bar').style.width = (data.safetyScore || 0) + "%";
+            document.getElementById('count-good').innerText = data.counts.good || 0;
+            document.getElementById('count-insufficient').innerText = data.counts.insuff || 0;
+            document.getElementById('count-missing').innerText = data.counts.miss || 0;
+            document.getElementById('ai-summary').innerHTML = data.aiSummary;
 
-            // 상세 진단표
-            const rowsContainer = document.getElementById('diagnosis-rows');
-            rowsContainer.innerHTML = '';
-            
-            if (data.coverageList && data.coverageList.length > 0) {
-                data.coverageList.forEach(item => {
-                    let colorClass = "";
-                    let ratio = 0;
-                    const status = item.status || "미가입";
-                    
-                    if (status === "우수") { colorClass = "text-emerald-600"; ratio = 100; }
-                    else if (status === "보통") { colorClass = "text-emerald-500"; ratio = 75; }
-                    else if (status === "부족") { colorClass = "text-orange-500"; ratio = 40; }
-                    else { colorClass = "text-rose-600"; ratio = 0; }
+            // 상세 진단표
+            const rowsContainer = document.getElementById('diagnosis-rows');
+            rowsContainer.innerHTML = '';
+            
+            if (data.coverageList && data.coverageList.length > 0) {
+                data.coverageList.forEach(item => {
+                    let colorClass = "";
+                    let ratio = 0;
+                    const status = item.status || "미가입";
+                    
+                    if (status === "우수") { colorClass = "text-emerald-600"; ratio = 100; }
+                    else if (status === "보통") { colorClass = "text-emerald-500"; ratio = 75; }
+                    else if (status === "부족") { colorClass = "text-orange-500"; ratio = 40; }
+                    else { colorClass = "text-rose-600"; ratio = 0; }
 
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-gray-50 transition";
-                    tr.innerHTML = `
-                        <td class="px-8 py-4 font-semibold text-gray-700">${item.name}</td>
-                        <td class="px-4 py-4 text-gray-500">${(parseInt(item.currentVal) || 0).toLocaleString()}원</td>
-                        <td class="px-4 py-4">
-                            <div class="w-full max-w-[100px] mx-auto h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                <div class="h-full bg-blue-500" style="width: ${ratio}%"></div>
-                            </div>
-                        </td>
-                        <td class="px-8 py-4 text-right font-black ${colorClass}">${status}</td>
-                    `;
-                    rowsContainer.appendChild(tr);
-                });
-            } else {
-                rowsContainer.innerHTML = `<tr><td colspan="4" class="py-20 text-center text-gray-400">분석된 담보 정보가 없습니다.</td></tr>`;
-            }
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50 transition";
+                    tr.innerHTML = `
+                        <td class="px-8 py-4 font-semibold text-gray-700">${item.name}</td>
+                        <td class="px-4 py-4 text-gray-500">${(parseInt(item.currentVal) || 0).toLocaleString()}원</td>
+                        <td class="px-4 py-4">
+                            <div class="w-full max-w-[100px] mx-auto h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-blue-500" style="width: ${ratio}%"></div>
+                            </div>
+                        </td>
+                        <td class="px-8 py-4 text-right font-black ${colorClass}">${status}</td>
+                    `;
+                    rowsContainer.appendChild(tr);
+                });
+            } else {
+                rowsContainer.innerHTML = `<tr><td colspan="4" class="py-20 text-center text-gray-400">분석된 담보 정보가 없습니다.</td></tr>`;
+            }
 
-            // 동적 전략
-            const strategyContainer = document.getElementById('dynamic-strategy');
-            strategyContainer.innerHTML = '';
-            if (data.strategies) {
-                data.strategies.forEach(s => {
-                    const div = document.createElement('div');
-                    div.className = "strategy-step";
-                    div.innerHTML = `<p class="font-bold text-gray-800 text-sm">Step ${s.step}. ${s.title}</p><p class="text-xs text-gray-500 mt-1 italic">${s.desc}</p>`;
-                    strategyContainer.appendChild(div);
-                });
-            }
+            // 동적 전략
+            const strategyContainer = document.getElementById('dynamic-strategy');
+            strategyContainer.innerHTML = '';
+            if (data.strategies) {
+                data.strategies.forEach(s => {
+                    const div = document.createElement('div');
+                    div.className = "strategy-step";
+                    div.innerHTML = `<p class="font-bold text-gray-800 text-sm">Step ${s.step}. ${s.title}</p><p class="text-xs text-gray-500 mt-1 italic">${s.desc}</p>`;
+                    strategyContainer.appendChild(div);
+                });
+            }
 
-            renderRecommendations();
-            document.getElementById('expert-strategy-section').classList.remove('hidden');
-        }
+            renderRecommendations();
+            document.getElementById('expert-strategy-section').classList.remove('hidden');
+        }
 
-        function renderRecommendations() {
-            const area = document.getElementById('total-area');
-            const container = document.getElementById('recommend-container');
-            area.classList.remove('hidden');
-            container.innerHTML = '';
+        function renderRecommendations() {
+            const area = document.getElementById('total-area');
+            const container = document.getElementById('recommend-container');
+            area.classList.remove('hidden');
+            container.innerHTML = '';
 
-            productPortfolio.forEach(prod => {
-                const card = document.createElement('div');
-                card.className = "card recommend-card flex flex-col border border-gray-100";
-                card.innerHTML = `
-                    <div class="p-6 space-y-4 flex-grow">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <span class="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider">${prod.type}</span>
-                                <h3 class="text-xl font-black text-gray-800 mt-1">${prod.name}</h3>
-                            </div>
-                            <div class="text-blue-600 bg-blue-50 w-10 h-10 rounded-full flex items-center justify-center"><i class="fas fa-star"></i></div>
-                        </div>
-                        <p class="text-xs text-gray-500 leading-relaxed font-medium bg-gray-50 p-3 rounded-lg border-l-4 border-blue-200">"${prod.reason}"</p>
-                        <div class="flex flex-wrap gap-2">${prod.features.map(f => `<span class="text-[10px] border border-gray-200 px-2 py-1 rounded-md text-gray-400 font-bold">#${f}</span>`).join('')}</div>
-                        <div class="space-y-2 pt-2 border-t border-dashed">
-                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">핵심 설계 포인트</p>
-                            <div class="grid grid-cols-1 gap-2">${prod.detail.coverage.map(c => `<div class="flex justify-between text-xs bg-slate-50 p-2 rounded"><span class="text-gray-500">${c.label}</span><span class="font-bold text-gray-800">${c.val}</span></div>`).join('')}</div>
-                        </div>
-                    </div>
-                    <div class="p-4 bg-gray-50 border-t flex items-center justify-between">
-                        <span class="text-[11px] font-bold text-blue-800">${prod.detail.merit}</span>
-                        <button onclick="showProductDetail('${prod.id}')" class="bg-white border border-blue-600 text-blue-600 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition">상세보기</button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-            area.scrollIntoView({ behavior: 'smooth' });
-        }
+            productPortfolio.forEach(prod => {
+                const card = document.createElement('div');
+                card.className = "card recommend-card flex flex-col border border-gray-100";
+                card.innerHTML = `
+                    <div class="p-6 space-y-4 flex-grow">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider">${prod.type}</span>
+                                <h3 class="text-xl font-black text-gray-800 mt-1">${prod.name}</h3>
+                            </div>
+                            <div class="text-blue-600 bg-blue-50 w-10 h-10 rounded-full flex items-center justify-center"><i class="fas fa-star"></i></div>
+                        </div>
+                        <p class="text-xs text-gray-500 leading-relaxed font-medium bg-gray-50 p-3 rounded-lg border-l-4 border-blue-200">"${prod.reason}"</p>
+                        <div class="flex flex-wrap gap-2">${prod.features.map(f => `<span class="text-[10px] border border-gray-200 px-2 py-1 rounded-md text-gray-400 font-bold">#${f}</span>`).join('')}</div>
+                        <div class="space-y-2 pt-2 border-t border-dashed">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">핵심 설계 포인트</p>
+                            <div class="grid grid-cols-1 gap-2">${prod.detail.coverage.map(c => `<div class="flex justify-between text-xs bg-slate-50 p-2 rounded"><span class="text-gray-500">${c.label}</span><span class="font-bold text-gray-800">${c.val}</span></div>`).join('')}</div>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-gray-50 border-t flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-blue-800">${prod.detail.merit}</span>
+                        <button onclick="showProductDetail('${prod.id}')" class="bg-white border border-blue-600 text-blue-600 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition">상세보기</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            area.scrollIntoView({ behavior: 'smooth' });
+        }
 
-        function showProductDetail(productId) {
-            const product = productPortfolio.find(p => p.id === productId);
-            if (!product) return;
-            const mainContainer = document.getElementById('main-container');
-            const detailView = document.getElementById('detail-view');
-            detailView.innerHTML = `
-                <div class="card overflow-hidden">
-                    <div class="gradient-bg p-8 text-white relative">
-                        <button onclick="closeProductDetail()" class="absolute top-6 right-6 text-white bg-white/20 hover:bg-white/30 w-10 h-10 rounded-full flex items-center justify-center transition"><i class="fas fa-times"></i></button>
-                        <span class="inline-block px-3 py-1 bg-blue-400 text-xs font-bold rounded-full mb-4 uppercase tracking-widest">${product.type}</span>
-                        <h2 class="text-3xl font-black mb-2">${product.name}</h2>
-                        <p class="text-blue-100 font-light italic">"${product.reason}"</p>
-                    </div>
-                    <div class="p-8 space-y-8">
-                        <div><h4 class="text-blue-600 font-bold text-sm uppercase tracking-tighter mb-4 flex items-center gap-2"><i class="fas fa-bullseye"></i> 상품 특장점</h4><div class="grid grid-cols-1 md:grid-cols-3 gap-4">${product.features.map(f => `<div class="bg-blue-50 p-4 rounded-xl text-center border border-blue-100"><p class="text-blue-800 font-bold text-sm">#${f}</p></div>`).join('')}</div></div>
-                        <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100"><h4 class="text-gray-400 font-bold text-[10px] uppercase tracking-widest mb-4">전문가 추천 사유</h4><p class="text-gray-700 leading-relaxed">${product.reason}</p><p class="mt-4 text-sm font-bold text-blue-600 underline decoration-2 underline-offset-4">${product.detail.merit}</p></div>
-                        <div><h4 class="text-blue-600 font-bold text-sm uppercase tracking-tighter mb-4 flex items-center gap-2"><i class="fas fa-info-circle"></i> 가입 가이드 및 보장 정보</h4><div class="space-y-3">${product.detail.coverage.map(c => `<div class="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm"><span class="text-gray-500 text-sm">${c.label}</span><span class="font-black text-gray-800">${c.val}</span></div>`).join('')}</div></div>
-                        <div class="pt-4 flex gap-3"><button onclick="closeProductDetail()" class="flex-1 py-4 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition">닫기</button><button class="flex-[2] py-4 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition">무료 상담 예약하기</button></div>
-                    </div>
-                </div>
-            `;
-            mainContainer.classList.add('hidden');
-            detailView.classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        function showProductDetail(productId) {
+            const product = productPortfolio.find(p => p.id === productId);
+            if (!product) return;
+            const mainContainer = document.getElementById('main-container');
+            const detailView = document.getElementById('detail-view');
+            detailView.innerHTML = `
+                <div class="card overflow-hidden">
+                    <div class="gradient-bg p-8 text-white relative">
+                        <button onclick="closeProductDetail()" class="absolute top-6 right-6 text-white bg-white/20 hover:bg-white/30 w-10 h-10 rounded-full flex items-center justify-center transition"><i class="fas fa-times"></i></button>
+                        <span class="inline-block px-3 py-1 bg-blue-400 text-xs font-bold rounded-full mb-4 uppercase tracking-widest">${product.type}</span>
+                        <h2 class="text-3xl font-black mb-2">${product.name}</h2>
+                        <p class="text-blue-100 font-light italic">"${product.reason}"</p>
+                    </div>
+                    <div class="p-8 space-y-8">
+                        <div><h4 class="text-blue-600 font-bold text-sm uppercase tracking-tighter mb-4 flex items-center gap-2"><i class="fas fa-bullseye"></i> 상품 특장점</h4><div class="grid grid-cols-1 md:grid-cols-3 gap-4">${product.features.map(f => `<div class="bg-blue-50 p-4 rounded-xl text-center border border-blue-100"><p class="text-blue-800 font-bold text-sm">#${f}</p></div>`).join('')}</div></div>
+                        <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100"><h4 class="text-gray-400 font-bold text-[10px] uppercase tracking-widest mb-4">전문가 추천 사유</h4><p class="text-gray-700 leading-relaxed">${product.reason}</p><p class="mt-4 text-sm font-bold text-blue-600 underline decoration-2 underline-offset-4">${product.detail.merit}</p></div>
+                        <div><h4 class="text-blue-600 font-bold text-sm uppercase tracking-tighter mb-4 flex items-center gap-2"><i class="fas fa-info-circle"></i> 가입 가이드 및 보장 정보</h4><div class="space-y-3">${product.detail.coverage.map(c => `<div class="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl shadow-sm"><span class="text-gray-500 text-sm">${c.label}</span><span class="font-black text-gray-800">${c.val}</span></div>`).join('')}</div></div>
+                        <div class="pt-4 flex gap-3"><button onclick="closeProductDetail()" class="flex-1 py-4 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition">닫기</button><button class="flex-[2] py-4 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition">무료 상담 예약하기</button></div>
+                    </div>
+                </div>
+            `;
+            mainContainer.classList.add('hidden');
+            detailView.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
-        function closeProductDetail() {
-            document.getElementById('detail-view').classList.add('hidden');
-            document.getElementById('main-container').classList.remove('hidden');
-        }
-    </script>
+        function closeProductDetail() {
+            document.getElementById('detail-view').classList.add('hidden');
+            document.getElementById('main-container').classList.remove('hidden');
+        }
+    </script>
 </body>
+</html>```
