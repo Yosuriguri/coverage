@@ -169,6 +169,14 @@
                             <div id="dynamic-strategy" class="space-y-4">
                                 <!-- AI가 생성한 전략이 들어가는 곳 -->
                             </div>
+                            
+                            <!-- 분석 기반 최적 보강 상품 영역 (개수 수정 반영) -->
+                            <div id="strategy-recommendation" class="pt-6 border-t border-slate-100">
+                                <h4 class="text-xs font-black text-blue-800 mb-3 uppercase tracking-tighter">분석 기반 최적 보강 상품</h4>
+                                <div id="strategy-prod-list" class="space-y-3">
+                                    <!-- 부족한 보장을 채워줄 상품이 여기에 표시됨 -->
+                                </div>
+                            </div>
                         </div>
                         <div class="bg-slate-50 p-6 rounded-xl border border-slate-100 flex flex-col justify-between">
                             <div>
@@ -206,14 +214,14 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
         const productPortfolio = [
-            { id: 'damoeun-s5', type: '표준체 통합형', name: '다(多)모은 건강보험 S5', target: ['cancer', 'brain', 'heart', 'surgery'], reason: '당사 최다 특약 보유한 대표 건강상품으로, 업계 최초 중입자치료 및 프리미엄 암치료비 등 최신 의료기술 보장에 특화되어 있습니다.', features: ['표준체', '중입자치료', '올인원케어'], detail: { merit: '소구력 높은 비급여 항암약물/로봇수술 및 상급종합병원 치료비 집중 강화', coverage: [{ label: '보장/납입', val: '90세·종신 / 10·15·20·30년납' }, { label: '주요특약', val: '항암중입자방사선, 프리미엄암특정치료' }] } },
-            { id: 'ganpyeon-damoeun', type: '유병자 통합형', name: 'The간편한 다(多)모은 건강보험', target: ['cancer', 'brain', 'heart', 'surgery'], reason: '초경증(3.10.5)부터 중증(3.1.5)까지 유병자 고객을 세분화하여 표준체 수준의 폭넓은 보장을 제공합니다.', features: ['간편고지', '계약전환제도', '무해약환급금형'], detail: { merit: '무사고 시 보험료 인하가 가능한 계약전환제도 및 다양한 유병자 라인업 완성', coverage: [{ label: '고지유형', val: '1형(3.10.5) ~ 4형(3.1.5) 세분화' }, { label: '보장/납입', val: '90세·종신 / 10·15·20·30년납' }] } },
-            { id: 'the-light-ganpyeon-2506', type: '유병자 실속형', name: 'The라이트 간편건강보험 (2506)', target: ['cancer', 'brain', 'heart'], reason: '25.06 신상품으로, 상품 구조 단순화 및 핵심 전략 담보(암/뇌/심)의 가격 경쟁력을 극대화한 가성비 유병자 상품입니다.', features: ['25.06 신상', '가격경쟁력', '갱신형'], detail: { merit: '기존 유병자 보험 대비 낮은 보험료로 핵심 3대 질병 보장 집중 타겟팅', coverage: [{ label: '상품구조', val: '20/30년 갱신형 (최대 100세)' }, { label: '고지항목', val: '1형(3.10.5), 2형(3.5.5)' }] } },
-            { id: 'the-light-health', type: '건강우량체형', name: 'The라이트 건강보험 (건강고지형)', target: ['cancer', 'brain', 'heart'], reason: '표준체보다 더 건강한 우량고객을 위한 상품으로, 10년 고지 시 일반 표준체 대비 최대 25% 저렴한 보험료가 장점입니다.', features: ['건강고지형', '최대 25% 할인', '우량체 특화'], detail: { merit: '입원/수술 고지 추가를 통해 건강한 고객에게 확실한 보험료 혜택 제공', coverage: [{ label: '고지유형', val: '1형(10년고지), 2형(7년고지)' }, { label: '보장/납입', val: '100세 만기 / 10·15·20·30년납' }] } },
-            { id: 'double-bojang-cancer', type: '보장+저축 하이브리드', name: '더블보장보험 (암/암간병)', target: ['cancer', 'care'], reason: '암이나 간병 발생 시 기납입보험료의 최대 200%를 지급하며, 생존 보장과 연금/사망 기능을 결합한 하이브리드 상품입니다.', features: ['200% 환급', '암간병 특화', '건강관리서비스'], detail: { merit: '암/간병 발생 시 연금액 2배 설계로 노후 자산 니즈 동시 충족', coverage: [{ label: '주요특징', val: '암/간병 시그니처 발생 시 기납입 2배' }, { label: '추가보장', val: '발생 후 사망보험금 가입금액 2배' }] } },
-            { id: 'plus-one-health', type: '환급형 건강보험', name: '플러스원 건강보험', target: ['cancer', 'death', 'senior'], reason: '업계 최초 자유설계식 환급형 상품으로, 납입 완료 시 해약환급금 100% 수준을 유지하며 시니어 보장을 더해줍니다.', features: ['100% 환급', '시니어보장플랜', '전이암 보장'], detail: { merit: '노년기에 필요한 사망/시니어 보장이 장기 유지 시 자동으로 추가되는 구조', coverage: [{ label: '환급구조', val: '납입완료 시 100% 수준 환급금 형성' }, { label: '특화담보', val: '전이암/고액암 직접치료 특약 탑재' }] } },
-            { id: 'well-aging-health', type: '실버 케어형', name: '웰에이징(Well-Aging) 건강보험', target: ['care', 'dementia', 'senior'], reason: '노인성 질환 예방부터 치매, 재가/시설 급여까지 노후 돌봄을 완벽하게 커버하는 시니어 전용 보험입니다.', features: ['시니어 전용', '돌봄플랜', '건강관리지원금'], detail: { merit: '치매 보장과 돌봄 서비스(재가/시설급여)에 집중한 시니어 특화 라인업', coverage: [{ label: '특화특약', val: '웰에이징 질병보장, 건강관리지원금 전환' }, { label: '케어서비스', val: '웰에이징 케어서비스 제공' }] } },
-            { id: 'the-dream-health', type: '환급 특화형', name: 'The(더) Dream 건강보험', target: ['cancer', 'brain', 'heart', 'refund'], reason: '보장, 환급, 연금을 하나로 합친 어른이 전용 보험으로, 만기 시 100% 환급과 완납기념금을 제공합니다.', features: ['100% 환급', '완납기념금', '심플한 구조'], detail: { merit: '주보험 하나로 33가지 주요 보장 해결 및 최대 110% 강화된 환급 구조', coverage: [{ label: '환급률', val: '만기 시 100% + 완납기념금(5~10%)' }, { label: '가입대상', val: '표준체 및 간편고지(3.5.5) 선택 가능' }] } }
+            { id: 'damoeun-s5', type: '표준체 통합형', name: '다(多)모은 건강보험 S5', target: ['암', '뇌', '심장', '수술'], reason: '당사 최다 특약 보유한 대표 건강상품으로, 업계 최초 중입자치료 및 프리미엄 암치료비 등 최신 의료기술 보장에 특화되어 있습니다.', features: ['표준체', '중입자치료', '올인원케어'], detail: { merit: '소구력 높은 비급여 항암약물/로봇수술 및 상급종합병원 치료비 집중 강화', coverage: [{ label: '보장/납입', val: '90세·종신 / 10·15·20·30년납' }, { label: '주요특약', val: '항암중입자방사선, 프리미엄암특정치료' }] } },
+            { id: 'ganpyeon-damoeun', type: '유병자 통합형', name: 'The간편한 다(多)모은 건강보험', target: ['암', '뇌', '심장', '수술'], reason: '초경증(3.10.5)부터 중증(3.1.5)까지 유병자 고객을 세분화하여 표준체 수준의 폭넓은 보장을 제공합니다.', features: ['간편고지', '계약전환제도', '무해약환급금형'], detail: { merit: '무사고 시 보험료 인하가 가능한 계약전환제도 및 다양한 유병자 라인업 완성', coverage: [{ label: '고지유형', val: '1형(3.10.5) ~ 4형(3.1.5) 세분화' }, { label: '보장/납입', val: '90세·종신 / 10·15·20·30년납' }] } },
+            { id: 'the-light-ganpyeon-2506', type: '유병자 실속형', name: 'The라이트 간편건강보험 (2506)', target: ['암', '뇌', '심장'], reason: '25.06 신상품으로, 상품 구조 단순화 및 핵심 전략 담보(암/뇌/심)의 가격 경쟁력을 극대화한 가성비 유병자 상품입니다.', features: ['25.06 신상', '가격경쟁력', '갱신형'], detail: { merit: '기존 유병자 보험 대비 낮은 보험료로 핵심 3대 질병 보장 집중 타겟팅', coverage: [{ label: '상품구조', val: '20/30년 갱신형 (최대 100세)' }, { label: '고지항목', val: '1형(3.10.5), 2형(3.5.5)' }] } },
+            { id: 'the-light-health', type: '건강우량체형', name: 'The라이트 건강보험 (건강고지형)', target: ['암', '뇌', '심장'], reason: '표준체보다 더 건강한 우량고객을 위한 상품으로, 10년 고지 시 일반 표준체 대비 최대 25% 저렴한 보험료가 장점입니다.', features: ['건강고지형', '최대 25% 할인', '우량체 특화'], detail: { merit: '입원/수술 고지 추가를 통해 건강한 고객에게 확실한 보험료 혜택 제공', coverage: [{ label: '고지유형', val: '1형(10년고지), 2형(7년고지)' }, { label: '보장/납입', val: '100세 만기 / 10·15·20·30년납' }] } },
+            { id: 'double-bojang-cancer', type: '보장+저축 하이브리드', name: '더블보장보험 (암/암간병)', target: ['암', '간병'], reason: '암이나 간병 발생 시 기납입보험료의 최대 200%를 지급하며, 생존 보장과 연금/사망 기능을 결합한 하이브리드 상품입니다.', features: ['200% 환급', '암간병 특화', '건강관리서비스'], detail: { merit: '암/간병 발생 시 연금액 2배 설계로 노후 자산 니즈 동시 충족', coverage: [{ label: '주요특징', val: '암/간병 시그니처 발생 시 기납입 2배' }, { label: '추가보장', val: '발생 후 사망보험금 가입금액 2배' }] } },
+            { id: 'plus-one-health', type: '환급형 건강보험', name: '플러스원 건강보험', target: ['암', '사망', '시니어'], reason: '업계 최초 자유설계식 환급형 상품으로, 납입 완료 시 해약환급금 100% 수준을 유지하며 시니어 보장을 더해줍니다.', features: ['100% 환급', '시니어보장플랜', '전이암 보장'], detail: { merit: '노년기에 필요한 사망/시니어 보장이 장기 유지 시 자동으로 추가되는 구조', coverage: [{ label: '환급구조', val: '납입완료 시 100% 수준 환급금 형성' }, { label: '특화담보', val: '전이암/고액암 직접치료 특약 탑재' }] } },
+            { id: 'well-aging-health', type: '실버 케어형', name: '웰에이징(Well-Aging) 건강보험', target: ['간병', '치매', '시니어'], reason: '노인성 질환 예방부터 치매, 재가/시설 급여까지 노후 돌봄을 완벽하게 커버하는 시니어 전용 보험입니다.', features: ['시니어 전용', '돌봄플랜', '건강관리지원금'], detail: { merit: '치매 보장과 돌봄 서비스(재가/시설급여)에 집중한 시니어 특화 라인업', coverage: [{ label: '특화특약', val: '웰에이징 질병보장, 건강관리지원금 전환' }, { label: '케어서비스', val: '웰에이징 케어서비스 제공' }] } },
+            { id: 'the-dream-health', type: '환급 특화형', name: 'The(더) Dream 건강보험', target: ['암', '뇌', '심장', '환급'], reason: '보장, 환급, 연금을 하나로 합친 어른이 전용 보험으로, 만기 시 100% 환급과 완납기념금을 제공합니다.', features: ['100% 환급', '완납기념금', '심플한 구조'], detail: { merit: '주보험 하나로 33가지 주요 보장 해결 및 최대 110% 강화된 환급 구조', coverage: [{ label: '환급률', val: '만기 시 100% + 완납기념금(5~10%)' }, { label: '가입대상', val: '표준체 및 간편고지(3.5.5) 선택 가능' }] } }
         ];
 
         async function analyzeWithGemini(text) {
@@ -303,6 +311,9 @@
             const rowsContainer = document.getElementById('diagnosis-rows');
             rowsContainer.innerHTML = '';
             
+            // 부족/미가입 담보 키워드 추출 (추천 로직용)
+            const weakKeywords = [];
+
             if (data.coverageList && data.coverageList.length > 0) {
                 data.coverageList.forEach(item => {
                     let colorClass = "";
@@ -311,8 +322,14 @@
                     
                     if (status === "우수") { colorClass = "text-emerald-600"; ratio = 100; }
                     else if (status === "보통") { colorClass = "text-emerald-500"; ratio = 75; }
-                    else if (status === "부족") { colorClass = "text-orange-500"; ratio = 40; }
-                    else { colorClass = "text-rose-600"; ratio = 0; }
+                    else if (status === "부족") { 
+                        colorClass = "text-orange-500"; ratio = 40; 
+                        weakKeywords.push(item.name);
+                    }
+                    else { 
+                        colorClass = "text-rose-600"; ratio = 0; 
+                        weakKeywords.push(item.name);
+                    }
 
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-gray-50 transition";
@@ -344,8 +361,44 @@
                 });
             }
 
+            // 전문가 전략 섹션 내 상품 추천 로직 (부족한 담보 기반)
+            renderExpertStrategyRecommendations(weakKeywords);
+
             renderRecommendations();
             document.getElementById('expert-strategy-section').classList.remove('hidden');
+        }
+
+        // [핵심 수정] 전문가 전략용 상품 필터링 및 렌더링 (최대 5개 노출)
+        function renderExpertStrategyRecommendations(weakKeywords) {
+            const listContainer = document.getElementById('strategy-prod-list');
+            listContainer.innerHTML = '';
+
+            // 1. 부족한 담보 키워드와 매칭되는 상품 찾기 (Python 로직의 Scoring에 해당)
+            const recommended = productPortfolio.filter(prod => {
+                return prod.target.some(t => weakKeywords.some(wk => wk.includes(t)));
+            }).slice(0, 5); // [수정] 기존 2개에서 5개로 확장
+
+            // 2. 만약 매칭되는게 없다면 기본 포트폴리오 상위 노출 (Top-N 적용)
+            const finalDisplay = recommended.length > 0 ? recommended : productPortfolio.slice(0, 5);
+
+            finalDisplay.forEach(prod => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between p-3 bg-white border border-blue-50 rounded-lg hover:border-blue-200 transition cursor-pointer shadow-sm";
+                item.onclick = () => showProductDetail(prod.id);
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs">
+                            <i class="fas fa-hand-holding-heart"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-blue-500 font-bold leading-none mb-1">${prod.type}</p>
+                            <p class="text-xs font-black text-gray-800 leading-none">${prod.name}</p>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-300 text-[10px]"></i>
+                `;
+                listContainer.appendChild(item);
+            });
         }
 
         function renderRecommendations() {
@@ -416,3 +469,5 @@
     </script>
 </body>
 </html>
+
+<!-- 위 코드에 내용, 디자인, 코드, 로직은 절대 변경 및 수정하지 말고 실행만해 -->
